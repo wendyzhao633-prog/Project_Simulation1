@@ -1,0 +1,75 @@
+# =============================================================================
+# SelfVA Experiment Configuration
+# Affect Representation × Prompt Strategy comparison
+#
+# Usage (CLI):
+#   python -m src.selfva_run_matrix_parallel \
+#       --conditions VA AROUSAL_ONLY PHYSIO \
+#       --prompt_strategies minimal_adaptive \
+#       --n_scenarios 80 --n_subjects 10
+#
+# To run all three strategies (full comparison):
+#   --prompt_strategies minimal_adaptive empathy_then_help adaptive_priority
+# =============================================================================
+
+# --- Affect conditions ---
+# VA          : injects valence + arousal (continuous, normalized -1..1)
+# AROUSAL_ONLY: injects arousal only (valence set to 0)
+# PHYSIO      : injects simulated PPG features (HR, RMSSD, SDNN, pNN50)
+conditions: [VA, AROUSAL_ONLY, PHYSIO]
+
+# --- Planned pairwise comparisons ---
+comparisons:
+  - VA:PHYSIO
+  - AROUSAL_ONLY:PHYSIO
+
+# --- Prompt strategies ---
+#
+# PRIMARY experiment (default):  minimal_adaptive
+#   Run: --prompt_strategies minimal_adaptive
+#
+# OPTIONAL comparison experiments:
+#   Run: --prompt_strategies minimal_adaptive empathy_then_help adaptive_priority
+#
+# Strategy descriptions:
+#   minimal_adaptive   – tone/pacing adaptation only; no explicit emotional acknowledgement
+#   empathy_then_help  – brief emotional acknowledgement first, then practical help
+#   adaptive_priority  – balances emotional support vs. task help based on message content
+#
+# VA/AROUSAL_ONLY conditions use the base strategy system prompt.
+# PHYSIO condition automatically uses the *_physio variant (physio-aware wording).
+#
+prompt_strategies:
+  primary: minimal_adaptive
+  all: [minimal_adaptive, empathy_then_help, adaptive_priority]
+
+# --- Data & sampling ---
+self_va_csv: data/text_VA_emo.csv
+n_scenarios: 80
+n_subjects: 10
+n_trials: 1
+
+# VA noise (simulates measurement uncertainty in self-reported VA)
+sigma_v: 0.25    # valence noise std
+sigma_a: 0.10    # arousal noise std
+
+# --- Model ---
+llm: gpt-5.4-2026-03-05
+concurrency: 5
+
+# --- Reproducibility ---
+seed: 42
+
+# --- Output paths ---
+out_jsonl: outputs/selfva_runs_v4_80.jsonl
+out_features_csv: outputs/selfva_simulated_features_v4_80.csv
+alignment_report_csv: outputs/selfva_alignment_report_v4_80.csv
+
+# =============================================================================
+# Expected run count (primary experiment):
+#   n_scenarios (80) × n_subjects (10) × n_trials (1)
+#   × conditions (3) × prompt_strategies (1) = 2 400 API calls
+#
+# Full comparison (all 3 strategies):
+#   × conditions (3) × prompt_strategies (3) = 7 200 API calls
+# =============================================================================
